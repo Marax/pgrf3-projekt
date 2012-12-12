@@ -1,26 +1,48 @@
-import fim.utils.Application;
-import fim.utils.Console;
+package gui;
 
-import java.awt.Color;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseMotionAdapter;
-import java.awt.event.MouseEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.awt.image.BufferedImage; //import java.awt.*;
-import java.text.Normalizer;
-import java.util.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
+import java.awt.image.BufferedImage;
+import java.util.Vector;
 
-import samples.ClockApp;
-import samples.GraphApp;
-import samples.I18NApplication;
-import samples.KochApp;
-import samples.SortApp;
-import transforms.*;
-import renderer.*;
+import objects.IObject;
+import objects.Sphere;
+import renderer.AlphaTest;
+import renderer.Blend;
+import renderer.Line;
+import renderer.PixelShader;
+import renderer.Ref;
+import renderer.Renderer;
+import renderer.Texture2D;
 import renderer.Texture2D.AddressMode;
+import renderer.TextureTools;
+import renderer.VVector;
+import renderer.VertexShader;
+import renderer.ZTest;
+import transforms.Camera;
+import transforms.Col;
+import transforms.Mat3;
+import transforms.Mat4;
+import transforms.Mat4Identity;
+import transforms.Mat4PerspRH;
+import transforms.Mat4RotX;
+import transforms.Mat4RotY;
+import transforms.Mat4RotZ;
+import transforms.Point3D;
+import transforms.Vec1D;
+import transforms.Vec2D;
+import transforms.Vec3D;
+import fim.utils.Application;
 
 public class App extends Application {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 
 	BufferedImage im;
 
@@ -48,7 +70,6 @@ public class App extends Application {
 	Camera cam = new Camera();
 	Mat4 mat, trans;
 
-	int typ = 999;
 	float texturaBarva = 1;
 
 	boolean pressed = false;
@@ -58,12 +79,18 @@ public class App extends Application {
 
 	int ox, oy;
 
+	private Object o;
+
+	private IObject object = new Sphere();
+
+	public boolean normalMap = false;
+
 	class MyVertexShader implements VertexShader {
 		public MyVertexShader() {
 		}
 
 		public Vec3D computeVertex(Object vertex) {
-			return Telesa.compute(((Vec2D) vertex).x, ((Vec2D) vertex).y, typ);
+			return object.compute(((Vec2D) vertex).x, ((Vec2D) vertex).y);
 		}
 
 		public VVector process(Object vertex) {
@@ -111,10 +138,6 @@ public class App extends Application {
 
 			} else {
 
-				/*
-				 * Cvièení 14. 12.
-				 */
-
 				Vec3D eyepos = cam.getEye();
 
 				double x = ((Vec2D) vertex).x;
@@ -128,10 +151,10 @@ public class App extends Application {
 
 				double dif = 1e-5;
 
-				Vec3D dx = Telesa.compute(x + dif, y, typ).add(
-						Telesa.compute(x - dif, y, typ).mul(-1));
-				Vec3D dy = Telesa.compute(x, y + dif, typ).add(
-						Telesa.compute(x, y - dif, typ).mul(-1));
+				Vec3D dx = object.compute(x + dif, y).add(
+						object.compute(x - dif, y).mul(-1));
+				Vec3D dy = object.compute(x, y + dif).add(
+						object.compute(x, y - dif).mul(-1));
 				Vec3D n = dy.cross(dx).normalized(); // nebo obrácenì
 
 				double diffuse = lightVec.dot(n);
@@ -315,8 +338,8 @@ public class App extends Application {
 
 		setupGeometry();
 
-		texture = TextureTools.createFromFile("mesic.png");
-		texture_n = TextureTools.createFromFile("mesic_n.png");
+		texture = TextureTools.createFromFile("textures/mesic.png");
+		texture_n = TextureTools.createFromFile("textures/mesic_n.png");
 		texture.addressMode = AddressMode.WRAP;
 		texture_n.addressMode = AddressMode.WRAP;
 
@@ -402,11 +425,11 @@ public class App extends Application {
 	public void handleMenu(int zkratka) {
 		switch (zkratka) {
 		case 10:
-			typ = 999;
+			//typ = 999;
 			renderWireframe();
 			break;
 		case 20:
-			typ = 1;
+			//	typ = 1;
 			renderWireframe();
 			break;
 		case 91:
@@ -430,40 +453,40 @@ public class App extends Application {
 			renderSolid();
 			break;
 		case 30:
-			typ = 2;
+			//	typ = 2;
 			renderWireframe();
 			break;
 		case 40:
-			typ = 3;
+			//	typ = 3;
 			renderWireframe();
 			break;
 		case 50:
-			typ = 4;
+			//	typ = 4;
 			renderWireframe();
 			break;
 		case 60:
-			typ = 5;
+			//typ = 5;
 			renderWireframe();
 			break;
 		case 70:
-			typ = 6;
+			//typ = 6;
 			renderWireframe();
 			break;
 		case 110:
-			texture = TextureTools.createFromFile("mesic.png");
-			texture_n = TextureTools.createFromFile("mesic_n.png");
+			texture = TextureTools.createFromFile("textures/mesic.png");
+			texture_n = TextureTools.createFromFile("textures/mesic_n.png");
 			texturaBarva = 2;
 			renderSolid();
 			break;
 		case 120:
-			texture = TextureTools.createFromFile("Telos.png");
-			texture_n = TextureTools.createFromFile("Telos_n.png");
+			texture = TextureTools.createFromFile("textures/Telos.png");
+			texture_n = TextureTools.createFromFile("textures/Telos_n.png");
 			texturaBarva = 2;
 			renderSolid();
 			break;
 		case 130:
-			texture = TextureTools.createFromFile("earth.png");
-			texture_n = TextureTools.createFromFile("earth_n.png");
+			texture = TextureTools.createFromFile("textures/earth.png");
+			texture_n = TextureTools.createFromFile("textures/earth_n.png");
 			texturaBarva = 2;
 			renderSolid();
 			break;
@@ -477,6 +500,9 @@ public class App extends Application {
 
 	public void start() {
 
+		out.setTitle("Projekt PGRF3");
+        new Menu(this);
+        
 		menu.setVisible(true);
 		menu.add("Kartez1 (Sphere)", 10);
 		menu.add("Kartez2 (Snake)", 20);
@@ -504,7 +530,6 @@ public class App extends Application {
 		buttons.add("Textura + Gouraud", 96);
 		buttons.add("Normal mapping", 92);
 
-		out.setTitle("Projekt PGRF3");
 
 		im = out.getCanvas().getImage();
 
@@ -613,5 +638,10 @@ public class App extends Application {
 
 	public static void main(String[] args) {
 		new App().start();
+	}
+
+	public void setFce(IObject object) {
+		this.object = object;
+
 	}
 }
