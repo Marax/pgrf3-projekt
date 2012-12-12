@@ -1,6 +1,6 @@
 package renderer;
 
-import transforms.*;
+import transforms.VSE;
 
 /**
  * Genericka trida spravujici dvourozmerne pole prvku vektoroveho prostoru.

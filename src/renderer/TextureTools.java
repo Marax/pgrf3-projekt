@@ -1,10 +1,12 @@
 package renderer;
 
-import transforms.*;
 import java.awt.image.BufferedImage;
-import javax.imageio.ImageIO;
 import java.io.File;
 import java.io.IOException;
+
+import javax.imageio.ImageIO;
+
+import transforms.Col;
 
 /**
  * Pomocna trida, ktera obsahuje staticke metody pro dalsi praci s texturami,

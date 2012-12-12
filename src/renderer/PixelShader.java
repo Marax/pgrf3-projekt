@@ -1,6 +1,7 @@
 package renderer;
 
-import transforms.*;
+import transforms.Col;
+import transforms.Vec1D;
 
 /**
  * Rozhrani, jehoz implementace definuje operace provadene na pixelech.

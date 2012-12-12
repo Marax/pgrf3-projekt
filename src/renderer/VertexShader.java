@@ -1,6 +1,5 @@
 package renderer;
 
-import transforms.*;
 
 /**
  * Rozhrani, jehoz implementace definuje operace provadene na vrcholech.

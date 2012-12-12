@@ -1,6 +1,6 @@
 package renderer;
 
-import transforms.*;
+import transforms.Col;
 
 /**
  * Rozhrani, jehoz implementace definuje chovani pri skladani barvy

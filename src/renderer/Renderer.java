@@ -3,9 +3,11 @@
  */
 package renderer;
 
-import java.awt.Point;
 import java.util.Vector;
-import transforms.*;
+
+import transforms.Col;
+import transforms.Point3D;
+import transforms.Vec1D;
 
 public class Renderer {
 	/**

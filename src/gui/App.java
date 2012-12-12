@@ -36,6 +36,7 @@ import transforms.Vec1D;
 import transforms.Vec2D;
 import transforms.Vec3D;
 import fim.utils.Application;
+import fim.utils.Console;
 
 public class App extends Application {
 
@@ -70,8 +71,6 @@ public class App extends Application {
 	Camera cam = new Camera();
 	Mat4 mat, trans;
 
-	float texturaBarva = 1;
-
 	boolean pressed = false;
 
 	Vec3D zdroj_svetla;
@@ -96,76 +95,39 @@ public class App extends Application {
 		public VVector process(Object vertex) {
 			VVector result = new VVector();
 
-			if (texturaBarva > 1) {
+			double d = 0.001;
 
-				double d = 0.001;
+			Point3D pos = new Point3D(computeVertex((Vec2D) vertex));
+			result.data.add(pos.mul(mat)); // get(0)
 
-				Point3D pos = new Point3D(computeVertex((Vec2D) vertex));
-				result.data.add(pos.mul(mat)); // get(0)
+			// binormal
+			Vec3D T = computeVertex(((Vec2D) vertex).add(new Vec2D(d, 0))).add(
+					computeVertex(((Vec2D) vertex).add(new Vec2D(-d, 0))).mul(
+							-1)).normalized();
 
-				// binormal
-				Vec3D T = computeVertex(((Vec2D) vertex).add(new Vec2D(d, 0)))
-						.add(computeVertex(
-								((Vec2D) vertex).add(new Vec2D(-d, 0))).mul(-1))
-						.normalized();
+			// tangent
+			Vec3D B = computeVertex(((Vec2D) vertex).add(new Vec2D(0, d))).add(
+					computeVertex(((Vec2D) vertex).add(new Vec2D(0, -d))).mul(
+							-1)).normalized();
 
-				// tangent
-				Vec3D B = computeVertex(((Vec2D) vertex).add(new Vec2D(0, d)))
-						.add(computeVertex(
-								((Vec2D) vertex).add(new Vec2D(0, -d))).mul(-1))
-						.normalized();
+			// normal
+			Vec3D N = T.cross(B);
+			N = B.cross(T);
+			B = T.cross(N);
 
-				// normal
-				Vec3D N = T.cross(B);
-				N = B.cross(T);
-				B = T.cross(N);
+			Vec3D f_normal = new Vec3D(-N.y, N.x, N.z);
+			Mat3 tang = new Mat3(N, N, N);
+			tang = tang.transpose();
 
-				Vec3D f_normal = new Vec3D(-N.y, N.x, N.z);
-				Mat3 tang = new Mat3(N, N, N);
-				tang = tang.transpose();
+			result.data.add(f_normal); // get(1)
+			result.data.add(new Vec3D(pos)); // get(2)
+			result.data.add(tang); // get(3)
+			result.data.add((Vec2D) vertex); // get(4)
 
-				result.data.add(f_normal); // get(1)
-				result.data.add(new Vec3D(pos)); // get(2)
-				result.data.add(tang); // get(3)
-				result.data.add((Vec2D) vertex); // get(4)
+			zdroj_svetla = new Vec3D(200, -200, 0);
 
-				// zdroj_svetla = new Vec3D(cam.getPosition().x,
-				// cam.getPosition().y + 50, cam.getPosition().z + 50);
-				zdroj_svetla = new Vec3D(200, -200, 0);
-
-				result.data.add(zdroj_svetla.mul(tang)); // get(5)
-				result.data.add(cam.getEye().mul(tang)); // get(6)
-
-			} else {
-
-				Vec3D eyepos = cam.getEye();
-
-				double x = ((Vec2D) vertex).x;
-				double y = ((Vec2D) vertex).y;
-
-				Vec3D v = new Vec3D(computeVertex((Vec2D) vertex));
-				zdroj_svetla = new Vec3D(200, -200, 0);
-
-				Vec3D eyeVec = eyepos.add(v.mul(-1)).normalized(); // eyepos - v
-				Vec3D lightVec = zdroj_svetla.add(v.mul(-1)).normalized();
-
-				double dif = 1e-5;
-
-				Vec3D dx = object.compute(x + dif, y).add(
-						object.compute(x - dif, y).mul(-1));
-				Vec3D dy = object.compute(x, y + dif).add(
-						object.compute(x, y - dif).mul(-1));
-				Vec3D n = dy.cross(dx).normalized(); // nebo obrácenì
-
-				double diffuse = lightVec.dot(n);
-				diffuse = Math.max(diffuse, 0);
-
-				result.data.add(new Point3D(v).mul(mat));
-				result.data.add((Vec2D) vertex);
-				result.data.add(new Vec1D(diffuse));
-
-			}
-
+			result.data.add(zdroj_svetla.mul(tang)); // get(5)
+			result.data.add(cam.getEye().mul(tang)); // get(6)
 			return result;
 		}
 	}
@@ -177,7 +139,7 @@ public class App extends Application {
 		public void process(VVector interpolate, Ref<Col> outColor,
 				Ref<Vec1D> outZ) {
 
-			if (texturaBarva == 2) {
+			if (normalMap) {
 				/*
 				 * ============== normal mapping ==============
 				 */
@@ -236,14 +198,7 @@ public class App extends Application {
 
 				outColor.ref = C;
 
-			} else if (texturaBarva == 3) {
-				/*
-				 * ============== barva ==============
-				 */
-				outColor.ref = new Col(((Vec2D) interpolate.data.get(4)).x,
-						((Vec2D) interpolate.data.get(4)).y, 0);
-
-			} else if (texturaBarva == 4) {
+			} else {
 				/*
 				 * ============== pouze textura ==============
 				 */
@@ -251,20 +206,6 @@ public class App extends Application {
 						((Vec2D) interpolate.data.get(4)).x,
 						((Vec2D) interpolate.data.get(4)).y);
 
-			} else {
-				/*
-				 * ============== Gouraud ==============
-				 */
-				double d = ((Vec1D) interpolate.data.get(2)).x;
-				if (texturaBarva == 0) {
-					// s texturou
-					outColor.ref = texture.sample(
-							((Vec2D) interpolate.data.get(1)).x,
-							((Vec2D) interpolate.data.get(1)).y).mul(d);
-				} else {
-					// bez textury
-					outColor.ref = new Col(d, d, d);
-				}
 			}
 		}
 	}
@@ -396,9 +337,7 @@ public class App extends Application {
 		out.repaint();
 	}
 
-	/**
-	 * vola se pokazde kdyz se zmackne ENTER
-	 */
+
 	void renderSolid() {
 		out.getCanvas().clear();
 		mat = trans.mul(cam.getViewMatrix()).mul(
@@ -422,119 +361,15 @@ public class App extends Application {
 			}
 	}
 
-	public void handleMenu(int zkratka) {
-		switch (zkratka) {
-		case 10:
-			//typ = 999;
-			renderWireframe();
-			break;
-		case 20:
-			//	typ = 1;
-			renderWireframe();
-			break;
-		case 91:
-			texturaBarva = 1;
-			renderSolid();
-			break;
-		case 92:
-			texturaBarva = 2;
-			renderSolid();
-			break;
-		case 93:
-			texturaBarva = 3;
-			renderSolid();
-			break;
-		case 94:
-			texturaBarva = 4;
-			renderSolid();
-			break;
-		case 96:
-			texturaBarva = 0;
-			renderSolid();
-			break;
-		case 30:
-			//	typ = 2;
-			renderWireframe();
-			break;
-		case 40:
-			//	typ = 3;
-			renderWireframe();
-			break;
-		case 50:
-			//	typ = 4;
-			renderWireframe();
-			break;
-		case 60:
-			//typ = 5;
-			renderWireframe();
-			break;
-		case 70:
-			//typ = 6;
-			renderWireframe();
-			break;
-		case 110:
-			texture = TextureTools.createFromFile("textures/mesic.png");
-			texture_n = TextureTools.createFromFile("textures/mesic_n.png");
-			texturaBarva = 2;
-			renderSolid();
-			break;
-		case 120:
-			texture = TextureTools.createFromFile("textures/Telos.png");
-			texture_n = TextureTools.createFromFile("textures/Telos_n.png");
-			texturaBarva = 2;
-			renderSolid();
-			break;
-		case 130:
-			texture = TextureTools.createFromFile("textures/earth.png");
-			texture_n = TextureTools.createFromFile("textures/earth_n.png");
-			texturaBarva = 2;
-			renderSolid();
-			break;
-		case 140:
-			texture = TextureTools.createFromFile("test_n.png");
-			texturaBarva = 2;
-			renderSolid();
-			break;
-		}
-	}
-
 	public void start() {
-
+		
+		out.switchView(Console.VIEW_GRAPH);
 		out.setTitle("Projekt PGRF3");
-        new Menu(this);
-        
-		menu.setVisible(true);
-		menu.add("Kartez1 (Sphere)", 10);
-		menu.add("Kartez2 (Snake)", 20);
-		menu.add("Kartez3 ", 70);
-		menu.add("Sphe1 (Bumpy Sphlere)", 30);
-		menu.add("Sphe2 ", 60);
-		menu.add("Cylin1 (Sombrero)", 50);
-		menu.add("Cylin2 ", 40);
-		menu.addSeparator();
-		menu.add("Barva", 93);
-		menu.add("Textura", 94);
-		menu.add("Gouraud diffuse", 91);
-		menu.add("Textura + Gouraud", 96);
-		menu.add("Normal mapping", 92);
-		menu.addSeparator();
-		menu.add("Textura - Mìsíc", 110);
-		menu.add("Textura - Telus", 120);
-		menu.add("Textura - Zemì", 130);
-		menu.add("Test (bezbarvá textura)", 140);
-
-		buttons.setUserToolbarVisible(true);
-		buttons.add("Barva", 93);
-		buttons.add("Textura", 94);
-		buttons.add("Gouraud diffuse", 91);
-		buttons.add("Textura + Gouraud", 96);
-		buttons.add("Normal mapping", 92);
-
-
+		
+		new Menu(this);
+	
 		im = out.getCanvas().getImage();
-
-		// out.switchView(Console.VIEW_GRAPH);
-
+		
 		setup();
 
 		cam.setPosition(new Vec3D(50, 2, 10));

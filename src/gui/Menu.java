@@ -19,12 +19,14 @@ import objects.Snake;
 import objects.Sp1;
 import objects.Sp2;
 import objects.Sphere;
+import renderer.TextureTools;
 
 public class Menu extends JFrame implements ActionListener {
 
 	private App app;
 	private JComboBox objectList, textureList;
 	JCheckBox normalMap;
+
 	public Menu(App app) {
 		this.app = app;
 		setupGui();
@@ -53,8 +55,7 @@ public class Menu extends JFrame implements ActionListener {
 		add(pTxt);
 
 		normalMap = new JCheckBox("Normal Mapping");
-		
-		
+
 		JPanel pButtons = new JPanel();
 		JButton apply = new JButton("Render solid");
 		pButtons.add(normalMap);
@@ -90,18 +91,21 @@ public class Menu extends JFrame implements ActionListener {
 			break;
 		}
 
-	
-			//app.texturing = true;
+		switch (textureList.getSelectedIndex()) {
+		case 0:
+			app.texture = TextureTools.createFromFile("textures/mesic.png");
+			app.texture_n = TextureTools.createFromFile("textures/mesic_n.png");
+			break;
+		case 1:
+			app.texture = TextureTools.createFromFile("textures/earth.png");
+			app.texture_n = TextureTools.createFromFile("textures/earth_n.png");
+			break;
+		case 2:
+			app.texture = TextureTools.createFromFile("textures/Telos.png");
+			app.texture_n = TextureTools.createFromFile("textures/Telos_n.png");
+			break;
+		}
 
-			/*if (texNo != textureList.getSelectedIndex()) {
-				texNo = textureList.getSelectedIndex();
-				app.t.load(texNo);
-			}*/
-			//if (vertical.isSelected()) {
-			//	app.t.setHorizontal(false);
-			//} else {
-			//	app.t.setHorizontal(true);
-		//	}
 		app.normalMap = normalMap.isSelected();
 		app.setFce(object);
 
